@@ -190,11 +190,7 @@ bindsym $mod+BackSpace split toggle
 bindsym $mod+m exec pactl set-source-mute @DEFAULT_SOURCE@ toggle
 
 bindsym $mod+Escape exec rofi -show power-menu -modi power-menu:rofi-power-menu
-bindsym Ctrl+Mod1+Delete exec rofi -show power-menu -modi power-menu:rofi-power-menu
-bindsym Mod1+Tab focus left
-
-bindsym $mod+l exec i3lock-fancy -f Bitstream-Vera-Serif -t "Vozec's laptop"
-bindsym Ctrl+Mod1+l exec i3lock-fancy -f Bitstream-Vera-Serif -t "Vozec's laptop"
+bindsym $mod+l exec i3lock-fancy -f Bitstream-Vera-Serif -t 'Welcome back to SkillArch'
 
 # Window Colors
 default_border pixel 2
