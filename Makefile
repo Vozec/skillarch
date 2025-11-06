@@ -20,14 +20,18 @@ sanity-check:
 
 install-base: sanity-check ## Install base packages
 	# Clean up, Update, Basics
+	sudo sed -e "s#.*ParallelDownloads.*#ParallelDownloads = 10#g" -i /etc/pacman.conf
+	echo 'BUILDDIR="/dev/shm/makepkg"' | sudo tee /etc/makepkg.conf.d/00-skillarch.conf
+	sudo cachyos-rate-mirrors # Increase install speed & Update repos
 	yes|sudo pacman -Scc
 	yes|sudo pacman -Syu
 	yes|sudo pacman -S --noconfirm --needed git vim tmux wget curl archlinux-keyring
-	sudo pacman-key --noconfirm --populate archlinux
-	sudo pacman-key --noconfirm --refresh-keys
+	sudo pacman-key --init
+	sudo pacman-key --populate archlinux
+	sudo pacman-key --refresh-keys
 
 	# Add chaotic-aur to pacman
-	sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
+	curl -sS "https://keyserver.ubuntu.com/pks/lookup?op=get&options=mr&search=0x3056513887B78AEB" | sudo pacman-key --add -
 	sudo pacman-key --lsign-key 3056513887B78AEB
 	sudo pacman --noconfirm -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
 	sudo pacman --noconfirm -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
@@ -43,11 +47,13 @@ install-base: sanity-check ## Install base packages
 	make clean
 
 install-cli-tools: sanity-check ## Install system packages
-	yes|sudo pacman -S --noconfirm --needed base-devel bison bzip2 ca-certificates cloc cmake dos2unix expect ffmpeg foremost gdb gnupg htop bottom hwinfo icu inotify-tools iproute2 jq llvm lsof ltrace make mlocate mplayer ncurses net-tools ngrep nmap openssh openssl parallel perl-image-exiftool pkgconf python-virtualenv re2c readline ripgrep rlwrap socat gnu-netcat sqlite sshpass tmate tor traceroute trash-cli tree unzip vbindiff xclip xz yay zip veracrypt git-delta viu xsv asciinema htmlq neovim glow jless websocat superfile gron exa fastfetch bat sysstat cronie
+	yes|sudo pacman -S --noconfirm --needed base-devel bison bzip2 ca-certificates cloc cmake dos2unix expect ffmpeg foremost gdb gnupg htop bottom hwinfo icu inotify-tools iproute2 jq llvm lsof ltrace make mlocate mplayer ncurses net-tools ngrep nmap openssh openssl parallel perl-image-exiftool pkgconf python-virtualenv re2c readline ripgrep rlwrap socat sqlite sshpass tmate tor traceroute trash-cli tree unzip vbindiff xclip xz yay zip veracrypt git-delta viu xsv asciinema htmlq neovim glow jless websocat superfile gron exa fastfetch bat sysstat cronie
+	sudo ln -sf /usr/bin/bat /usr/local/bin/batcat
+	bash -c "$$(curl -fsSL https://gef.blah.cat/sh)"
 	missing_exa_lib=$$(ldd $$(which exa) | grep -ioP 'libgit2.*not found' | cut -d' ' -f 1)
 	[ ! -z $$missing_exa_lib ] && sudo ln -s /usr/lib/libgit2.so  "/usr/lib/$$missing_exa_lib"
 	# nvim config
-	[ ! -d ~/.config/nvim ] && git clone https://github.com/LazyVim/starter ~/.config/nvim
+	[ ! -d ~/.config/nvim ] && git clone --depth=1 https://github.com/LazyVim/starter ~/.config/nvim
 	[ -f ~/.config/nvim/init.lua ] && [ ! -L ~/.config/nvim/init.lua ] && mv ~/.config/nvim/init.lua ~/.config/nvim/init.lua.skabak
 	ln -sf /opt/skillarch/config/nvim/init.lua ~/.config/nvim/init.lua
 	nvim --headless +"Lazy! sync" +qa >/dev/null # Download and update plugins
@@ -55,7 +61,7 @@ install-cli-tools: sanity-check ## Install system packages
 	# Install pipx & tools
 	yay --noconfirm --needed -S python-pipx
 	pipx ensurepath
-	for package in argcomplete bypass-url-parser dirsearch exegol pre-commit sqlmap wafw00f yt-dlp semgrep; do pipx install -q "$$package" && pipx inject -q "$$package" setuptools; done
+	for package in argcomplete bypass-url-parser dirsearch exegol pre-commit sqlmap wafw00f yt-dlp semgrep defaultcreds-cheat-sheet; do pipx install -q "$$package" && pipx inject -q "$$package" setuptools; done
 
 	# Install mise and all php-build dependencies
 	yes|sudo pacman -S --noconfirm --needed mise libedit libffi libjpeg-turbo libpcap libpng libxml2 libzip postgresql-libs php-gd
@@ -71,15 +77,15 @@ install-shell: sanity-check ## Install shell packages
 	[ ! -d ~/.oh-my-zsh ] && sh -c "$$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 	[ -f ~/.zshrc ] && [ ! -L ~/.zshrc ] && mv ~/.zshrc ~/.zshrc.skabak
 	ln -sf /opt/skillarch/config/zshrc ~/.zshrc
-	[ ! -d ~/.oh-my-zsh/plugins/zsh-completions ] && git clone https://github.com/zsh-users/zsh-completions ~/.oh-my-zsh/plugins/zsh-completions
-	[ ! -d ~/.oh-my-zsh/plugins/zsh-autosuggestions ] && git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/plugins/zsh-autosuggestions
-	[ ! -d ~/.oh-my-zsh/plugins/zsh-syntax-highlighting ] && git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.oh-my-zsh/plugins/zsh-syntax-highlighting
+	[ ! -d ~/.oh-my-zsh/plugins/zsh-completions ] && git clone --depth=1 https://github.com/zsh-users/zsh-completions ~/.oh-my-zsh/plugins/zsh-completions
+	[ ! -d ~/.oh-my-zsh/plugins/zsh-autosuggestions ] && git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/plugins/zsh-autosuggestions
+	[ ! -d ~/.oh-my-zsh/plugins/zsh-syntax-highlighting ] && git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting ~/.oh-my-zsh/plugins/zsh-syntax-highlighting
 	[ ! -d ~/.ssh ] && mkdir ~/.ssh && chmod 700 ~/.ssh # Must exist for ssh-agent to work
-	for plugin in colored-man-pages docker extract fzf mise npm terraform tmux zsh-autosuggestions zsh-completions zsh-syntax-highlighting ssh-agent; do zsh -c "source ~/.zshrc && omz plugin enable $$plugin || true"; done
+	for plugin in colored-man-pages docker extract fzf mise npm terraform tmux zsh-autosuggestions zsh-completions zsh-syntax-highlighting ssh-agent z ; do zsh -c "source ~/.zshrc && omz plugin enable $$plugin || true"; done
 	make clean
 
 	# Install and configure fzf, tmux, vim
-	[ ! -d ~/.fzf ] && git clone --depth 1 https://github.com/junegunn/fzf ~/.fzf && ~/.fzf/install --all
+	[ ! -d ~/.fzf ] && git clone --depth=1 https://github.com/junegunn/fzf ~/.fzf && ~/.fzf/install --all
 	[ -f ~/.tmux.conf ] && [ ! -L ~/.tmux.conf ] && mv ~/.tmux.conf ~/.tmux.conf.skabak
 	ln -sf /opt/skillarch/config/tmux.conf ~/.tmux.conf
 	[ -f ~/.vimrc ] && [ ! -L ~/.vimrc ] && mv ~/.vimrc ~/.vimrc.skabak
@@ -137,10 +143,10 @@ install-gui: sanity-check ## Install gui, i3, polybar, kitty, rofi, picom
 
 install-gui-tools: sanity-check ## Install system packages
 	yes|sudo pacman -S --noconfirm --needed vlc-luajit # Must be done before obs-studio-browser to avoid conflicts
-	yes|sudo pacman -S --noconfirm --needed arandr blueman cheese code code-marketplace discord dunst filezilla flameshot ghex google-chrome gparted kdenlive kompare libreoffice-fresh meld okular qbittorrent torbrowser-launcher wireshark-qt ghidra signal-desktop dragon-drop-git nomachine obs-studio-browser emote guvcview audacity
+	yes|sudo pacman -S --noconfirm --needed arandr blueman cheese code code-marketplace discord dunst filezilla flameshot ghex google-chrome gparted kdenlive kompare libreoffice-fresh meld okular qbittorrent torbrowser-launcher wireshark-qt ghidra signal-desktop dragon-drop-git nomachine obs-studio-browser emote guvcview audacity polkit-gnome
 	# Do not start services in docker
 	[ ! -f /.dockerenv ] && sudo systemctl disable --now nxserver.service
-	xargs -n1 code --install-extension < config/extensions.txt
+	xargs -n1 -I{} code --install-extension {} --force < config/extensions.txt
 	yay --noconfirm --needed -S fswebcam cursor-bin
 	sudo ln -sf /usr/bin/google-chrome-stable /usr/local/bin/gog
 	make clean
@@ -148,7 +154,7 @@ install-gui-tools: sanity-check ## Install system packages
 install-offensive: sanity-check ## Install offensive tools
 	yes|sudo pacman -S --noconfirm --needed metasploit fx lazygit fq gitleaks jdk21-openjdk burpsuite hashcat bettercap
 	sudo sed -i 's#$JAVA_HOME#/usr/lib/jvm/java-21-openjdk#g' /usr/bin/burpsuite
-	yay --noconfirm --needed -S ffuf gau pdtm-bin waybackurls
+	yay --noconfirm --needed -S ffuf gau pdtm-bin waybackurls fabric-ai-bin
 
 	# Hide stdout and Keep stderr for CI builds
 	mise exec -- go install github.com/sw33tLie/sns@latest > /dev/null
@@ -160,33 +166,32 @@ install-offensive: sanity-check ## Install offensive tools
 	zsh -c "source ~/.zshrc && nuclei -update-templates -update-template-dir ~/.nuclei-templates"
 
 	# Clone custom tools
-	pushd /tmp # Avoid git clone in root
-	[ ! -d /opt/chisel ] && git clone https://github.com/jpillora/chisel && sudo mv chisel /opt/chisel
-	[ ! -d /opt/phpggc ] && git clone https://github.com/ambionics/phpggc && sudo mv phpggc /opt/phpggc
-	[ ! -d /opt/PyFuscation ] && git clone https://github.com/CBHue/PyFuscation && sudo mv PyFuscation /opt/PyFuscation
-	[ ! -d /opt/CloudFlair ] && git clone https://github.com/christophetd/CloudFlair && sudo mv CloudFlair /opt/CloudFlair
-	[ ! -d /opt/minos-static ] && git clone https://github.com/minos-org/minos-static && sudo mv minos-static /opt/minos-static
-	[ ! -d /opt/exploit-database ] && git clone https://github.com/offensive-security/exploit-database && sudo mv exploit-database /opt/exploit-database
-	[ ! -d /opt/exploitdb ] && git clone https://gitlab.com/exploit-database/exploitdb && sudo mv exploitdb /opt/exploitdb
-	[ ! -d /opt/pty4all ] && git clone https://github.com/laluka/pty4all && sudo mv pty4all /opt/pty4all
-	[ ! -d /opt/pypotomux ] && git clone https://github.com/laluka/pypotomux && sudo mv pypotomux /opt/pypotomux
+	pushd /tmp # Avoid git clone --depth=1 in root
+	[ ! -d /opt/chisel ] && git clone --depth=1 https://github.com/jpillora/chisel && sudo mv chisel /opt/chisel
+	[ ! -d /opt/phpggc ] && git clone --depth=1 https://github.com/ambionics/phpggc && sudo mv phpggc /opt/phpggc
+	[ ! -d /opt/PyFuscation ] && git clone --depth=1 https://github.com/CBHue/PyFuscation && sudo mv PyFuscation /opt/PyFuscation
+	[ ! -d /opt/CloudFlair ] && git clone --depth=1 https://github.com/christophetd/CloudFlair && sudo mv CloudFlair /opt/CloudFlair
+	[ ! -d /opt/minos-static ] && git clone --depth=1 https://github.com/minos-org/minos-static && sudo mv minos-static /opt/minos-static
+	[ ! -d /opt/exploit-database ] && git clone --depth=1 https://github.com/offensive-security/exploit-database && sudo mv exploit-database /opt/exploit-database
+	[ ! -d /opt/exploitdb ] && git clone --depth=1 https://gitlab.com/exploit-database/exploitdb && sudo mv exploitdb /opt/exploitdb
+	[ ! -d /opt/pty4all ] && git clone --depth=1 https://github.com/laluka/pty4all && sudo mv pty4all /opt/pty4all
+	[ ! -d /opt/pypotomux ] && git clone --depth=1 https://github.com/laluka/pypotomux && sudo mv pypotomux /opt/pypotomux
 	popd
 	make clean
 
 install-wordlists: sanity-check ## Install wordlists
 	[ ! -d /opt/lists ] && mkdir /tmp/lists && sudo mv /tmp/lists /opt/lists
 	[ ! -f /opt/lists/rockyou.txt ] && curl -L https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt -o /opt/lists/rockyou.txt
-	[ ! -d /opt/lists/PayloadsAllTheThings ] && git clone https://github.com/swisskyrepo/PayloadsAllTheThings /opt/lists/PayloadsAllTheThings
-	[ ! -d /opt/lists/fuzzing-templates ] && git clone https://github.com/projectdiscovery/fuzzing-templates /opt/lists/fuzzing-templates
-	[ ! -d /opt/lists/BruteX ] && git clone https://github.com/1N3/BruteX /opt/lists/BruteX
-	[ ! -d /opt/lists/IntruderPayloads ] && git clone https://github.com/1N3/IntruderPayloads /opt/lists/IntruderPayloads
-	[ ! -d /opt/lists/Probable-Wordlists ] && git clone https://github.com/berzerk0/Probable-Wordlists /opt/lists/Probable-Wordlists
-	[ ! -d /opt/lists/Open-Redirect-Payloads ] && git clone https://github.com/cujanovic/Open-Redirect-Payloads /opt/lists/Open-Redirect-Payloads
-	[ ! -d /opt/lists/SecLists ] && git clone https://github.com/danielmiessler/SecLists /opt/lists/SecLists
-	[ ! -d /opt/lists/Pwdb-Public ] && git clone https://github.com/ignis-sec/Pwdb-Public /opt/lists/Pwdb-Public
-	[ ! -d /opt/lists/Bug-Bounty-Wordlists ] && git clone https://github.com/Karanxa/Bug-Bounty-Wordlists /opt/lists/Bug-Bounty-Wordlists
-	[ ! -d /opt/lists/richelieu ] && git clone https://github.com/tarraschk/richelieu /opt/lists/richelieu
-	[ ! -d /opt/lists/webapp-wordlists ] && git clone https://github.com/p0dalirius/webapp-wordlists /opt/lists/webapp-wordlists
+	[ ! -d /opt/lists/PayloadsAllTheThings ] && git clone --depth=1 https://github.com/swisskyrepo/PayloadsAllTheThings /opt/lists/PayloadsAllTheThings
+	[ ! -d /opt/lists/BruteX ] && git clone --depth=1 https://github.com/1N3/BruteX /opt/lists/BruteX
+	[ ! -d /opt/lists/IntruderPayloads ] && git clone --depth=1 https://github.com/1N3/IntruderPayloads /opt/lists/IntruderPayloads
+	[ ! -d /opt/lists/Probable-Wordlists ] && git clone --depth=1 https://github.com/berzerk0/Probable-Wordlists /opt/lists/Probable-Wordlists
+	[ ! -d /opt/lists/Open-Redirect-Payloads ] && git clone --depth=1 https://github.com/cujanovic/Open-Redirect-Payloads /opt/lists/Open-Redirect-Payloads
+	[ ! -d /opt/lists/SecLists ] && git clone --depth=1 https://github.com/danielmiessler/SecLists /opt/lists/SecLists
+	[ ! -d /opt/lists/Pwdb-Public ] && git clone --depth=1 https://github.com/ignis-sec/Pwdb-Public /opt/lists/Pwdb-Public
+	[ ! -d /opt/lists/Bug-Bounty-Wordlists ] && git clone --depth=1 https://github.com/Karanxa/Bug-Bounty-Wordlists /opt/lists/Bug-Bounty-Wordlists
+	[ ! -d /opt/lists/richelieu ] && git clone --depth=1 https://github.com/tarraschk/richelieu /opt/lists/richelieu
+	[ ! -d /opt/lists/webapp-wordlists ] && git clone --depth=1 https://github.com/p0dalirius/webapp-wordlists /opt/lists/webapp-wordlists
 	make clean
 
 install-hardening: sanity-check ## Install hardening tools

@@ -23,14 +23,19 @@ font pango:monospace 8
 # Start XDG autostart .desktop files using dex. See also
 # https://wiki.archlinux.org/index.php/XDG_Autostart
 exec_always --no-startup-id dex --autostart --environment i3
+<<<<<<< HEAD
 
 #exec_always --no-startup-id feh --bg-scale /opt/skillarch/assets/bg-00.jpg
 exec_always --no-startup-id feh --bg-scale /opt/skillarch/assets/bg-vozec.jpg
 
+=======
+exec_always --no-startup-id feh --bg-scale /opt/skillarch/assets/bg.jpg
+>>>>>>> upstream/main
 exec_always --no-startup-id ~/.config/polybar/launch.sh &> /var/tmp/polybar.log
 exec_always --no-startup-id pgrep --exact VBoxService &> /dev/null && killall VBoxClient ; VBoxClient-all
 exec_always --no-startup-id bash -c "killall -q picom ; grep -qF hypervisor /proc/cpuinfo || picom"
 exec_always --no-startup-id i3-battery-popup
+exec_always --no-startup-id /usr/bin/spice-vdagent
 exec_always --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 # The combination of xss-lock, nm-applet and pactl is a popular choice, so
 # they are included here as an example. Modify as you see fit.
@@ -52,6 +57,7 @@ bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOU
 # Brightness controls
 bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +20%
 bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 20%-
+bindsym $mod+Shift+l exec --no-startup-id brightnessctl set 1%
 
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
@@ -105,6 +111,10 @@ bindsym $mod+Shift+f floating toggle
 
 # change focus between tiling / floating windows
 bindsym $mod+Shift+BackSpace focus mode_toggle
+
+# scratchpad
+bindsym $mod+shift+a move to scratchpad
+bindsym $mod+a scratchpad show
 
 # focus the parent container
 # bindsym $mod+q focus parent
@@ -189,12 +199,17 @@ bindsym $mod+k exec cursor
 bindsym $mod+BackSpace split toggle
 bindsym $mod+m exec pactl set-source-mute @DEFAULT_SOURCE@ toggle
 
+<<<<<<< HEAD
 bindsym $mod+Escape exec rofi -show power-menu -modi power-menu:rofi-power-menu
 bindsym Ctrl+Mod1+Delete exec rofi -show power-menu -modi power-menu:rofi-power-menu
 bindsym Mod1+Tab focus left
 
 bindsym $mod+l exec i3lock-fancy -f Bitstream-Vera-Serif -t "Vozec's laptop"
 bindsym Ctrl+Mod1+l exec i3lock-fancy -f Bitstream-Vera-Serif -t "Vozec's laptop"
+=======
+bindsym $mod+Escape exec rofi -show power-menu -modi "power-menu:rofi-power-menu --choices shutdown/reboot/logout/suspend"
+bindsym $mod+l exec i3lock-fancy -f Bitstream-Vera-Serif -t 'Welcome back to SkillArch'
+>>>>>>> upstream/main
 
 # Window Colors
 default_border pixel 2
@@ -216,6 +231,8 @@ for_window [title="^Volume Control$"] floating enable
 
 # Add new rules for floating windows
 for_window [floating] resize set 1536 864, resize set 1536 864, move position 192 108
+# Fix for floating i3 popups in burpsuite
+for_window [class="install4j-burp-StartBurp" title="^win[0-9]+$"] kill
 
 # HELP
 bindsym $mod+h exec kitty --title "Help: SkillArch Bindings" zsh -ic "ska-help-bindings"
